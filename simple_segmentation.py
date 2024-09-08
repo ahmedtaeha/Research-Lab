@@ -1,5 +1,3 @@
-#!/bin/bash
-cat << 'EOL' > /workspace/improved_segmentation.py
 import numpy as np
 import nibabel as nib
 import os
@@ -43,11 +41,3 @@ if __name__ == "__main__":
     output_dir = '/workspace/outputs/case/segmentations'
     os.makedirs(output_dir, exist_ok=True)
     improved_segmentation(input_file, output_dir)
-EOL
-
-echo "Created improved_segmentation.py file."
-cat /workspace/improved_segmentation.py
-echo "Running improved_segmentation.py:"
-python3 /workspace/improved_segmentation.py
-echo "Contents of /workspace/outputs:"
-ls -R /workspace/outputs

@@ -15,26 +15,45 @@ const upload = multer({ dest: 'uploads/' });
 // Serve static files from the current directory
 app.use(express.static(__dirname));
 
-// Create a script file
+// ... (keep the existing code up to the scriptContent definition)
+
 const scriptContent = `#!/bin/bash
-cat << 'EOL' > /workspace/simple_segmentation.py
+cat << 'EOL' > /workspace/improved_segmentation.py
 import numpy as np
 import nibabel as nib
 import os
+from scipy import ndimage
 
-def simple_segmentation(input_file, output_dir):
+def improved_segmentation(input_file, output_dir):
     # Load the NIfTI file
     img = nib.load(input_file)
     data = img.get_fdata()
 
-    # Simple thresholding for demonstration
-    liver = (data > 50) & (data < 200)
-    kidney = (data > 200) & (data < 300)
+    # Normalize data
+    data_normalized = (data - data.min()) / (data.max() - data.min())
+
+    # Define segmentation functions
+    def segment_organ(data, min_val, max_val, erosion_iterations=1, dilation_iterations=2):
+        mask = (data > min_val) & (data < max_val)
+        mask = ndimage.binary_erosion(mask, iterations=erosion_iterations)
+        mask = ndimage.binary_dilation(mask, iterations=dilation_iterations)
+        return mask
+
+    # Segment different structures
+    structures = {
+        'liver': segment_organ(data_normalized, 0.4, 0.7),
+        'kidney_left': segment_organ(data_normalized, 0.6, 0.8),
+        'kidney_right': segment_organ(data_normalized, 0.6, 0.8),
+        'spleen': segment_organ(data_normalized, 0.5, 0.7),
+        'lungs': segment_organ(data_normalized, 0.05, 0.2, erosion_iterations=2, dilation_iterations=3),
+        'heart': segment_organ(data_normalized, 0.3, 0.5),
+        'brain': segment_organ(data_normalized, 0.2, 0.4, erosion_iterations=2, dilation_iterations=3),
+    }
 
     # Save segmentation results
     affine = img.affine
-    nib.save(nib.Nifti1Image(liver.astype(np.int8), affine), os.path.join(output_dir, 'liver.nii.gz'))
-    nib.save(nib.Nifti1Image(kidney.astype(np.int8), affine), os.path.join(output_dir, 'kidney.nii.gz'))
+    for organ, mask in structures.items():
+        nib.save(nib.Nifti1Image(mask.astype(np.int8), affine), os.path.join(output_dir, f'{organ}.nii.gz'))
 
     print("Segmentation complete. Results saved in:", output_dir)
 
@@ -42,16 +61,18 @@ if __name__ == "__main__":
     input_file = '/workspace/inputs/case/ct.nii.gz'
     output_dir = '/workspace/outputs/case/segmentations'
     os.makedirs(output_dir, exist_ok=True)
-    simple_segmentation(input_file, output_dir)
+    improved_segmentation(input_file, output_dir)
 EOL
 
-echo "Created simple_segmentation.py file."
-cat /workspace/simple_segmentation.py
-echo "Running simple_segmentation.py:"
-python3 /workspace/simple_segmentation.py
+echo "Created improved_segmentation.py file."
+cat /workspace/improved_segmentation.py
+echo "Running improved_segmentation.py:"
+python3 /workspace/improved_segmentation.py
 echo "Contents of /workspace/outputs:"
 ls -R /workspace/outputs
 `;
+
+// ... (keep the rest of the server.js code the same)
 
 fs.writeFileSync('run_inference.sh', scriptContent);
 
