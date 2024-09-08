@@ -1,0 +1,1 @@
+This is a demo for Project II: web-based applications—AI inference. This project is to evaluate cutting-edge AI models based on the CT scans uploaded by users through browser. I built this demo to apply to a Johns Hopkins research developer position.
